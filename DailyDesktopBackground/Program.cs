@@ -1,26 +1,26 @@
-﻿using DailyDesktopBackground.Helper;
-using System;
-using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
+﻿using DailyDesktopBackground.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DailyDesktopBackground
 {
     public class Program
     {
-        public async static Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            var accessKey = LoadAccessKey();
-            var unsplashApi = new UnsplashApiClient(accessKey);
-            var photo = await unsplashApi.GetRandomDesktopBackground();
-            WallpaperHelper.SetWallpaper(new Uri(photo.Urls.Full));
-            unsplashApi.CallDownloadTrackingEndpoint(photo);
+            CreateHostBuilder(args).Build().Run();
         }
 
-        private static string LoadAccessKey()
-        {
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("DailyDesktopBackground..access-key");
-            return new StreamReader(stream).ReadToEnd();
-        }
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureServices((hostContext, services) =>
+                {
+                    IConfiguration config = hostContext.Configuration;
+
+                    services.AddSingleton(config);
+
+                    services.AddHostedService<TimedHostedService>();
+                });
     }
 }

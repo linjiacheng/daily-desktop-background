@@ -7,17 +7,24 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace DailyDesktopBackground.Helper
 {
     public class UnsplashApiClient
     {
-        private const string DESKTOP_BACKGROUND_ENDPOINT = @"https://api.unsplash.com/photos/random?query=desktop%20background&orientation=landscape";
+        private const string DESKTOP_BACKGROUND_ENDPOINT = @"https://api.unsplash.com/photos/random?query={searchTerms}&orientation=landscape";
 
         private readonly HttpClient _client;
 
-        public UnsplashApiClient(string accessKey)
+        private readonly IConfiguration _config;
+
+        public UnsplashApiClient(IConfiguration config)
         {
+            _config = config;
+
+            var accessKey = _config["accessKey"];
+
             _client = new HttpClient();
             _client.DefaultRequestHeaders.Add("Authorization", $"Client-ID {accessKey}");
         }
@@ -27,7 +34,9 @@ namespace DailyDesktopBackground.Helper
         /// </summary>
         public async Task<UnsplashPhoto> GetRandomDesktopBackground()
         {
-            var response = await _client.GetAsync(DESKTOP_BACKGROUND_ENDPOINT);
+            var searchTerms = _config["searchTerms"];
+
+            var response = await _client.GetAsync(DESKTOP_BACKGROUND_ENDPOINT.Replace("{searchTerms}", searchTerms));
             response.EnsureSuccessStatusCode();
             var jsonString = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<UnsplashPhoto>(jsonString);
